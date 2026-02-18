@@ -13,6 +13,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib import colors
 
+from pathlib import Path
+import zipfile
+import pandas as pd
+import streamlit as st
+
 st.set_page_config(page_title="Retail Sales Dashboard | Powell Ndlovu", layout="wide")
 
 st.markdown("""
@@ -24,7 +29,15 @@ st.markdown("""
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("merged_train_store_open_days.csv", low_memory=False)
+    base = Path(__file__).parent
+    zip_path = base / "merged_train_store_open_days.zip"
+
+    # Read CSV from ZIP
+    with zipfile.ZipFile(zip_path) as z:
+        csv_name = z.namelist()[0]  # automatically detect CSV inside zip
+        df = pd.read_csv(z.open(csv_name), low_memory=False)
+
+    # Convert Date column
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
 
     # numeric safety
@@ -35,6 +48,7 @@ def load_data():
     # Create Year/Month if missing
     if "Year" not in df.columns or df["Year"].isna().all():
         df["Year"] = df["Date"].dt.year
+
     if "Month" not in df.columns or df["Month"].isna().all():
         df["Month"] = df["Date"].dt.month
 
@@ -43,6 +57,7 @@ def load_data():
         df["StoreType"] = "Unknown"
 
     return df.dropna(subset=["Date"])
+
 
 df = load_data()
 
