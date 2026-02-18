@@ -18,8 +18,10 @@ import zipfile
 import pandas as pd
 import streamlit as st
 
+# Page config
 st.set_page_config(page_title="Retail Sales Dashboard | Powell Ndlovu", layout="wide")
 
+# Custom styling
 st.markdown("""
 <style>
 .block-container {padding-top: 1.2rem; padding-bottom: 2rem;}
@@ -27,39 +29,51 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Professional header
+st.title("📊 Retail Sales Analytics Dashboard")
+
+st.markdown("""
+**Powell Ndlovu**  
+Chevening Scholar | MSc GIS & Climate Change | Swansea University  
+Data Science • Machine Learning • Business Intelligence
+""")
+
+st.markdown("---")
+
+# Cached data loader
 @st.cache_data
 def load_data():
     base = Path(__file__).parent
     zip_path = base / "merged_train_store_open_days.zip"
 
-    # Read CSV from ZIP
     with zipfile.ZipFile(zip_path) as z:
-        csv_name = z.namelist()[0]  # automatically detect CSV inside zip
+        csv_name = z.namelist()[0]
         df = pd.read_csv(z.open(csv_name), low_memory=False)
 
-    # Convert Date column
     df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
 
-    # numeric safety
     for c in ["Sales","Customers","Promo","DayOfWeek","SchoolHoliday","CompetitionDistance","Store"]:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # Create Year/Month if missing
     if "Year" not in df.columns or df["Year"].isna().all():
         df["Year"] = df["Date"].dt.year
 
     if "Month" not in df.columns or df["Month"].isna().all():
         df["Month"] = df["Date"].dt.month
 
-    # Ensure StoreType exists
     if "StoreType" not in df.columns:
         df["StoreType"] = "Unknown"
 
     return df.dropna(subset=["Date"])
 
 
-df = load_data()
+# Loading spinner (professional UX)
+with st.spinner("Loading data and preparing dashboard..."):
+    df = load_data()
+
+# Success message
+st.success(f"Dataset loaded successfully: {len(df):,} records")
 
 # ----------------------------
 # Sidebar controls
